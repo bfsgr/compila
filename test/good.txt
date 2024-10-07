@@ -1,0 +1,15 @@
+routine Example;
+
+begin
+fn main() -> int {
+  int a = 1;
+  int b = 2;
+
+  int sum = a + b;
+
+  if(sum > 1 == true) {
+    sum = sum - 1;
+  }
+
+  return sum;
+}
