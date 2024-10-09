@@ -56,7 +56,7 @@
 %start ROUTINE;
 
 ROUTINE:
-  routine_tk id ';' begin_tk FN 
+  routine_tk id ';' begin_tk FN |
   routine_tk id ';' FUNCTIONS begin_tk FN;
 ;
 

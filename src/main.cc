@@ -1,6 +1,7 @@
 #include <compiler.hh>
 #include <flex.hh>
 #include <iostream>
+#include <termcolors.hh>
 
 using namespace std;
 
@@ -28,9 +29,11 @@ int main(int argc, char* argv[]) {
   bool result = driver.compile(filename);
 
   if (result) {
-    cout << "Compilation successful" << endl;
+    cout << term(Color::GREEN) << "Compilation successful" << term(Color::RESET)
+         << endl;
   } else {
-    cout << "Compilation failed" << endl;
+    cout << term(Color::RED) << "Compilation failed" << term(Color::RESET)
+         << endl;
   }
 
   return 0;
