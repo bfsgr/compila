@@ -10,7 +10,7 @@ bison_bin = find_program('bison', version: '>=3.8.0 && < 4')
 
 lexer = custom_target(
   'flex.c',
-  input: 'src/flex.ll',
+  input: 'src/flex.l',
   output: ['flex.cc', 'flex.hh'],
   command: [flex_bin, '-o', 'flex.cc', '--header-file=flex.hh', '@INPUT@'],
 )
