@@ -25,7 +25,13 @@ int main(int argc, char* argv[]) {
     }
   }
 
-  driver.compile(filename);
+  bool result = driver.compile(filename);
+
+  if (result) {
+    cout << "Compilation successful" << endl;
+  } else {
+    cout << "Compilation failed" << endl;
+  }
 
   return 0;
 }

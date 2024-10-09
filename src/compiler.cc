@@ -5,14 +5,19 @@ using namespace std;
 
 Compiler::Compiler() {}
 
-void Compiler::compile(const string &f) {
+bool Compiler::compile(const string &f) {
   file = f;
 
   this->location.initialize(&file);
 
   FILE *fp = fopen(file.c_str(), "r");
 
-  yyin = fp;
+  if (!fp) {
+    cerr << "Unable to open file: " << file << endl;
+    return false;
+  }
+
+    yyin = fp;
 
   yy::parser bparser = yy::parser(*this);
 
@@ -20,7 +25,9 @@ void Compiler::compile(const string &f) {
 
   bparser.set_debug_level(this->trace_parsing);
 
-  bparser.parse();
+  bool successful = bparser.parse() == 0;
 
   fclose(fp);
+
+  return successful;
 }

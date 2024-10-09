@@ -14,7 +14,7 @@ class Compiler {
   Compiler();
   yy::location location;
 
-  void compile(const std::string& f);
+  bool compile(const std::string& f);
 
   void set_trace_parsing(bool b) { this->trace_parsing = b; }
   void set_trace_scanning(bool b) { this->trace_scanning = b; }

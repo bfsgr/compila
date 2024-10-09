@@ -1,5 +1,14 @@
 routine Example;
 
+fn test() -> bool {
+  int a = 1;
+  return true;
+}
+
+fn hello() -> string {
+  return "Hello";
+}
+
 begin
 fn main() -> int {
   int a = 1;
