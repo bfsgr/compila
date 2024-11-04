@@ -15,13 +15,22 @@
 %code requires {
   #include <iostream>
   #include <string>
+  #include <vector>
   class Compiler;
 }
 %code {
   #include <compiler.hh>
 }
 
+%printer { 
+  yyo << "[";
+  for (const auto& token : $$) {
+    yyo << token << ' ';
+  }
+  yyo << "]";
+ } <std::vector<std::string>>;
 %printer { yyo << $$; } <*>;
+
 
 /* --- Tokens --- */
 
@@ -45,6 +54,8 @@
 %token <int> integer
 %token <float> floating_point
 %token <std::string> string
+%token <std::string> character
+%token <std::vector<std::string>> list
 %token <bool> boolean
 
 %right assign_tk
@@ -72,6 +83,8 @@ LITERAL:
 | floating_point
 | string
 | boolean
+| character
+| list
 
 COMPARISON:
   EXP gt EXP |

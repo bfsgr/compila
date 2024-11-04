@@ -16,6 +16,10 @@ fn main() -> int {
 
   int sum = a + b;
 
+  char t = 'c';
+
+  int<1> test = [1,2];
+
   if(sum > 1 == true) {
     sum = sum - 1;
   }

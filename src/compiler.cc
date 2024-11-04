@@ -17,7 +17,7 @@ bool Compiler::compile(const string &f) {
     return false;
   }
 
-    yyin = fp;
+  yyin = fp;
 
   yy::parser bparser = yy::parser(*this);
 
