@@ -5,6 +5,8 @@
 #include <bison.hh>
 #include <vector>
 #include <iostream>
+#include <limits>
+#include <sstream>
 using namespace yy;
 }
 
@@ -72,7 +74,16 @@ return { return parser::make_return_tk(loc); }
 
 
 {TYPE} { return parser::make_type(yytext, loc); }
-{INTEGER} { return parser::make_integer(atoi(yytext), loc); }
+{INTEGER} { 
+  int parsed = atoi(yytext);
+
+  if(parsed > std::numeric_limits<int>::max() || parsed < std::numeric_limits<int>::min()) {
+    throw parser::syntax_error(loc, "Lexical error: integer overflow");
+  }
+
+
+  return parser::make_integer(atoi(yytext), loc);
+}
 {FLOAT} { return parser::make_floating_point(atof(yytext), loc); }
 {BOOL} { return parser::make_boolean(std::string(yytext) == "true", loc); }
 {STRING} { 
@@ -90,22 +101,16 @@ return { return parser::make_return_tk(loc); }
 }
 {LIST} { 
   auto parsed = std::string(yytext).substr(1, std::string(yytext).size() - 2);
-  std::string delimiter = ",";
 
-  std::vector<std::string> tokens;
-  size_t pos = 0;
+  std::stringstream ss(parsed);
+  std::string item;
+  std::vector<std::string> result;
 
-  while ((pos = parsed.find(delimiter)) != std::string::npos) {
-    std::cout << "pushing" << parsed.substr(0, pos) << std::endl;
-    
-    tokens.push_back(parsed.substr(0, pos));
-    parsed.erase(0, pos + delimiter.length());
+  while (std::getline(ss, item, ',')) {
+      result.push_back(item);
   }
 
-  std::cout << tokens.size() << std::endl;
-
-
-  return parser::make_list(tokens, loc);
+  return parser::make_list(result, loc);
 
 }
 
