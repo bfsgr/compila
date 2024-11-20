@@ -1,8 +1,7 @@
 routine Example;
 
-fn test() -> bool {
-  int a = 1;
-  return true;
+fn test(int a) -> bool {
+  return a;
 }
 
 fn hello() -> string {
@@ -18,12 +17,23 @@ fn main() -> int {
 
   char t = 'c';
 
-  string<4> test2 = ["hello","world"];
-  int<1> test = [1,2,2];
+  string<2> array = ["hello","world"];
+  int<3> array2 = [1,2,2];
 
+  string fn_call = hello();
+  int fn_call_with_args = test(b);
 
-  if(sum > 1 == true) {
+  if(sum > 1) {
     sum = sum - 1;
+  } else {
+    sum = sum + 1;
+  }
+
+  int i = 0;
+
+  while(i < 10) {
+    sum = sum + i;
+    i = i + 1;
   }
 
   return sum;

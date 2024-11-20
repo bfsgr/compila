@@ -48,6 +48,7 @@ TYPE int|float|string|bool|char|int<{INTEGER}>|float<{INTEGER}>|string<{INTEGER}
 }
 
 ; { return parser::symbol_type(';', loc); }
+, { return parser::symbol_type(',', loc); }
 
 
 routine { return parser::make_routine_tk(loc); }
@@ -70,6 +71,8 @@ begin { return parser::make_begin_tk(loc); }
 \{ { return parser::symbol_type('{', loc); }
 \} { return parser::symbol_type('}', loc); }
 if { return parser::make_if_tk(loc); }
+else { return parser::make_else_tk(loc); }
+while { return parser::make_while_tk(loc); }
 return { return parser::make_return_tk(loc); }
 
 
