@@ -1,4 +1,6 @@
-routine teste "olá não"
+routine teste;
+
+"olá não"
 hello world a@@@
 a % 2
 

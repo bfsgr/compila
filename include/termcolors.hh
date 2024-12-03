@@ -1,4 +1,6 @@
 
+#ifndef TERM_COLORS_HH
+#define TERM_COLORS_HH
 #include <string>
 
 using namespace std;
@@ -23,3 +25,5 @@ constexpr const char* term(Color c) {
       return "\033[0m";
   }
 }
+
+#endif

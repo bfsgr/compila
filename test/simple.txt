@@ -1,0 +1,10 @@
+routine teste;
+
+begin
+fn main() -> int {
+  int<3> array = [1,2,2];
+
+  int a = call(1,2,3,4);
+
+  return 1 + 1;
+}

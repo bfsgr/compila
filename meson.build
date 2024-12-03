@@ -8,6 +8,8 @@ project(
 flex_bin = find_program('flex', version: '>=2.6.0 && < 3')
 bison_bin = find_program('bison', version: '>=3.8.0 && < 4')
 
+boost = dependency('boost', version: '>=1.86.0')
+
 lexer = custom_target(
   'flex.c',
   input: 'src/flex.l',
@@ -26,10 +28,17 @@ includes = [
   include_directories('./include'),
 ]
 
-sources = ['src/main.cc', 'src/compiler.cc', lexer, parser]
+sources = [
+  'src/main.cc',
+  'src/ast.cc',
+  'src/compiler.cc',
+  lexer,
+  parser,
+]
 
 executable(
   'compiler',
   sources,
+  dependencies: [boost],
   include_directories: includes,
 )

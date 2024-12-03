@@ -3,7 +3,45 @@
 
 using namespace std;
 
-Compiler::Compiler() {}
+Graph::vertex_descriptor Compiler::add_binary_op(Token op,
+                                                 Graph::vertex_descriptor a,
+                                                 Graph::vertex_descriptor b) {
+  auto v = this->add_node(Node{NodeType::binary_op, op});
+  this->add_child(v, a);
+  this->add_child(v, b);
+
+  return v;
+}
+
+Graph::vertex_descriptor Compiler::add_identifier(Token id) {
+  return this->add_node(Node{NodeType::identifier, id});
+}
+
+Graph::vertex_descriptor Compiler::add_type(Token id) {
+  return this->add_node(Node{NodeType::type, id});
+}
+
+Graph::vertex_descriptor Compiler::add_literal(Token lit) {
+  return this->add_node(Node{NodeType::literal, lit});
+}
+
+Graph::vertex_descriptor Compiler::add_call(Token id,
+                                            Graph::vertex_descriptor args) {
+  auto idn = this->add_identifier(id);
+  auto v = this->add_node(Node{NodeType::call, std::monostate()});
+  this->add_child(v, args);
+  this->add_child(v, idn);
+  return v;
+}
+
+Graph::vertex_descriptor Compiler::add_node(Node n) {
+  return this->ast.add_node(n);
+}
+
+void Compiler::add_child(Graph::vertex_descriptor v1,
+                         Graph::vertex_descriptor v2) {
+  this->ast.add_child(v1, v2);
+}
 
 bool Compiler::compile(const string &f) {
   file = f;
@@ -26,6 +64,8 @@ bool Compiler::compile(const string &f) {
   bparser.set_debug_level(this->trace_parsing);
 
   bool successful = bparser.parse() == 0;
+
+  this->ast.preorder();
 
   fclose(fp);
 
