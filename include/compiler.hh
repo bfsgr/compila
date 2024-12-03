@@ -24,6 +24,7 @@ class Compiler {
   Graph::vertex_descriptor add_binary_op(Token op, Graph::vertex_descriptor a,
                                          Graph::vertex_descriptor b);
   Graph::vertex_descriptor add_identifier(Token id);
+  Graph::vertex_descriptor add_ret_type(Token id);
   Graph::vertex_descriptor add_type(Token id);
   Graph::vertex_descriptor add_type(Token id, Token qualifier);
   Graph::vertex_descriptor add_literal(Token lit);

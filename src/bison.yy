@@ -115,9 +115,9 @@ FUNCTIONS:
     $$ = driver.add_node(Node {NodeType::definitions,std::monostate()});
     driver.add_child($$, $1);
   } |
-  FN FUNCTIONS {
-    $$ = $2;
-    driver.add_child($$, $1);
+  FUNCTIONS FN {
+    $$ = $1;
+    driver.add_child($$, $2);
   }
 
 /* Argumentos para funções, pode ser nada, um argumento ou N */
@@ -130,16 +130,16 @@ ARGS:
     auto type = driver.add_type($1);
 
     $$ = driver.add_node(Node {NodeType::args, std::monostate()});
-    driver.add_child($$, idn);
     driver.add_child($$, type);
+    driver.add_child($$, idn);
   } |
   ARGS ',' type id  {
     auto idn = driver.add_identifier($4);
     auto type = driver.add_type($3);
 
     $$ = $1;
-    driver.add_child($$, idn);
     driver.add_child($$, type);
+    driver.add_child($$, idn);
   }
 
 FN_DEF:
@@ -161,7 +161,7 @@ FN:
 
 FN_RET_TYPE:
   arrow_tk type {
-    $$ = driver.add_type($2);
+    $$ = driver.add_ret_type($2);
   }
 
 /* Marca dados crus como strings, ints, vetores */

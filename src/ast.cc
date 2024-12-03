@@ -57,6 +57,8 @@ std::string NodeTypeToString(NodeType type) {
       return "begin";
     case NodeType::qualifier:
       return "qualifier";
+    case NodeType::return_type:
+      return "return_type";
   }
 }
 

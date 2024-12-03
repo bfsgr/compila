@@ -24,6 +24,7 @@ enum class NodeType {
   while_,
   if_,
   return_,
+  return_type,
   assign,
   block,
   declaration,

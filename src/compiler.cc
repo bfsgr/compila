@@ -17,6 +17,10 @@ Graph::vertex_descriptor Compiler::add_identifier(Token id) {
   return this->add_node(Node{NodeType::identifier, id});
 }
 
+Graph::vertex_descriptor Compiler::add_ret_type(Token id) {
+  return this->add_node(Node{NodeType::return_type, id});
+}
+
 Graph::vertex_descriptor Compiler::add_type(Token id) {
   return this->add_node(Node{NodeType::type, id});
 }
