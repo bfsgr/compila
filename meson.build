@@ -8,7 +8,7 @@ project(
 flex_bin = find_program('flex', version: '>=2.6.0 && < 3')
 bison_bin = find_program('bison', version: '>=3.8.0 && < 4')
 
-boost = dependency('boost', version: '>=1.86.0')
+boost = dependency('boost', version: '>=1.80.0')
 
 lexer = custom_target(
   'flex.c',
