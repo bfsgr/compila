@@ -171,7 +171,10 @@ LITERAL:
  string { $$ = driver.add_literal($1); } |
  boolean { $$ = driver.add_literal($1); } |
  character { $$ = driver.add_literal($1); } |
- list { $$ = driver.add_literal($1); }
+ list { $$ = driver.add_literal($1); } |
+ '[' EXP_LIST ']' {
+    $$ = $2;
+  }
 
 /* Bloco de código, tem 0 ou N declarações  */
 INPUT:
@@ -189,6 +192,14 @@ STATEMENT:
   type id ';' {
     auto idn = driver.add_identifier($2);
     auto type = driver.add_type($1);
+
+    $$ = driver.add_node(Node {NodeType::declaration,std::monostate()});
+    driver.add_child($$, type);
+    driver.add_child($$, idn);
+  } |
+  type '[' integer ']' id  ';' {
+    auto idn = driver.add_identifier($5);
+    auto type = driver.add_type($1, $3);
 
     $$ = driver.add_node(Node {NodeType::declaration,std::monostate()});
     driver.add_child($$, type);
@@ -233,8 +244,16 @@ DECL_ASSIGN:
     auto type = driver.add_type($1);
 
     $$ = driver.add_node(Node {NodeType::declaration_assignment, std::monostate()});
-    driver.add_child($$, idn);
     driver.add_child($$, type);
+    driver.add_child($$, idn);
+  } |
+  type '[' integer ']' id assign_tk {
+    auto idn = driver.add_identifier($5);
+    auto type = driver.add_type($1, $3);
+
+    $$ = driver.add_node(Node {NodeType::declaration_assignment, std::monostate()});
+    driver.add_child($$, type);
+    driver.add_child($$, idn);
   }
 
 
@@ -262,9 +281,9 @@ WHILE:
 
 /* Não terminal auxiliar para uma lista de expressões em chamadas de função */
 EXP_LIST:
-  %empty { $$ = driver.add_node(Node{NodeType::call_args,std::monostate()}); } |
+  %empty { $$ = driver.add_node(Node{NodeType::exp_list,std::monostate()}); } |
   EXP { 
-    $$ = driver.add_node(Node {NodeType::call_args, std::monostate()});
+    $$ = driver.add_node(Node {NodeType::exp_list, std::monostate()});
     driver.add_child($$, $1);
   } |
   EXP ',' EXP_LIST  {

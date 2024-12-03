@@ -27,8 +27,8 @@ std::string NodeTypeToString(NodeType type) {
       return "literal";
     case NodeType::call:
       return "call";
-    case NodeType::call_args:
-      return "call_args";
+    case NodeType::exp_list:
+      return "exp_list";
     case NodeType::args:
       return "args";
     case NodeType::while_:
@@ -55,6 +55,8 @@ std::string NodeTypeToString(NodeType type) {
       return "routine";
     case NodeType::begin:
       return "begin";
+    case NodeType::qualifier:
+      return "qualifier";
   }
 }
 

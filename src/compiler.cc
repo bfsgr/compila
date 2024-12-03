@@ -21,6 +21,15 @@ Graph::vertex_descriptor Compiler::add_type(Token id) {
   return this->add_node(Node{NodeType::type, id});
 }
 
+Graph::vertex_descriptor Compiler::add_type(Token id, Token qualifier) {
+  auto v = this->add_node(Node{NodeType::type, id});
+  auto q = this->add_node(Node{NodeType::qualifier, qualifier});
+
+  this->add_child(v, q);
+
+  return v;
+}
+
 Graph::vertex_descriptor Compiler::add_literal(Token lit) {
   return this->add_node(Node{NodeType::literal, lit});
 }

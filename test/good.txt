@@ -17,8 +17,8 @@ fn main() -> int {
 
   char t = 'c';
 
-  string<2> array = ["hello","world"];
-  int<3> array2 = [1,2,2];
+  string[2] array = ["hello","world"];
+  int[3] array2 = [1,2,2];
 
   string fn_call = hello();
   int fn_call_with_args = test(b);

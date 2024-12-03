@@ -25,6 +25,7 @@ class Compiler {
                                          Graph::vertex_descriptor b);
   Graph::vertex_descriptor add_identifier(Token id);
   Graph::vertex_descriptor add_type(Token id);
+  Graph::vertex_descriptor add_type(Token id, Token qualifier);
   Graph::vertex_descriptor add_literal(Token lit);
   Graph::vertex_descriptor add_call(Token id, Graph::vertex_descriptor args);
   Graph::vertex_descriptor add_node(Node n);
