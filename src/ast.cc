@@ -59,6 +59,8 @@ std::string NodeTypeToString(NodeType type) {
       return "qualifier";
     case NodeType::return_type:
       return "return_type";
+    default:
+      throw std::runtime_error("Invalid NodeType");
   }
 }
 
