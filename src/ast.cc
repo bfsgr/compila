@@ -1,4 +1,6 @@
 #include <ast.hh>
+#include <fstream>
+#include <cstdlib>
 
 std::string print_array(const std::vector<std::string>& vec) {
   std::ostringstream oss;
@@ -161,7 +163,10 @@ class MyVisitor : public boost::default_dfs_visitor {
 };
 
 void AST::preorder() {
-  boost::write_graphviz(std::cout, g, NodeLabelWriter(g));
+  std::ofstream dot_file("graph.dot");
+  boost::write_graphviz(dot_file, g, NodeLabelWriter(g)); // Escreve em um arquivo o grafo
+  system("dot -Tpng graph.dot -o graph.png"); // Transforma o arquivo salvo para uma imagem
+  //boost::write_graphviz(std::cout, g, NodeLabelWriter(g)); // Exibe no terminal o grafo
 
   std::cout << term(Color::RED) << "Preorder" << term(Color::RESET)
             << std::endl;
