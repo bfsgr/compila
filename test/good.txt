@@ -1,6 +1,6 @@
 routine Example;
 
-fn test(int a) -> bool {
+fn test(bool a) -> bool {
   return a;
 }
 
@@ -21,7 +21,7 @@ fn main() -> int {
   int[3] array2 = [1,2,2];
 
   string fn_call = hello();
-  int fn_call_with_args = test(b);
+  bool fn_call_with_args = test(b);
 
   if(sum > 1) {
     sum = sum - 1;

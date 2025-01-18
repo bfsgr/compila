@@ -66,6 +66,7 @@
     "utility": "cpp",
     "format": "cpp",
     "cinttypes": "cpp",
-    "iostream": "cpp"
+    "iostream": "cpp",
+    "stack": "cpp"
   }
 }

@@ -59,6 +59,8 @@ bool Compiler::compile(const string &f) {
   cout << term(Color::YELLOW) << "Running semantic analysis"
        << term(Color::RESET) << endl;
 
+  this->ast.semantic_analysis();
+
   cout << endl;
 
   fclose(fp);

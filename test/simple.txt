@@ -1,10 +1,10 @@
 routine teste;
 
-fn t(int a, char b) -> bool {
-  return "haha";
+fn call(bool a, char b) -> bool {
+  return a;
 }
 
-fn call() -> bool {}
+fn call0() -> bool {}
 
 begin
 fn main() -> int {
@@ -13,14 +13,14 @@ fn main() -> int {
 
   bool t1 = (23 + 1) > 1;
 
-  string s;
+  int r = 1; 
 
-  bool b = 2 > 1;
+  bool b = 2 > r;
 
   b = true;
 
 
-  int a = call("teste");
+  bool l = call("teste");
   
 
   return 1;

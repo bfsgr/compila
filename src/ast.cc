@@ -157,6 +157,15 @@ std::ostream& boost::operator<<(std::ostream& os,
   return os;
 }
 
+std::ostream& operator<<(std::ostream& os, const std::optional<Node>& n) {
+  if (n) {
+    os << n.value();
+  } else {
+    os << "<>";
+  }
+  return os;
+}
+
 std::ostream& boost::operator<<(
     std::ostream& os,
     const std::optional<std::vector<std::pair<Token, Token>>>& args) {
@@ -227,10 +236,24 @@ void AST::add_child(Graph::vertex_descriptor v1, Graph::vertex_descriptor v2) {
 
 void AST::add_symbol(Node n) { symbol_table.push_back(n); }
 
+std::optional<Node> AST::find_symbol_by_value(Token v, Node* scope) {
+  auto it = std::find_if(symbol_table.begin(), symbol_table.end(), [&](Node s) {
+    return s.value == v && s.scope == scope;
+  });
+
+  if (it != symbol_table.end()) {
+    return *it;
+  }
+
+  return std::nullopt;
+}
+
 class MyVisitor : public boost::default_dfs_visitor {
  private:
   AST ast;
   Graph g;
+  std::stack<Node*> stack;
+  Node* scope;
 
  public:
   MyVisitor(AST& ast, Graph& g) {
@@ -238,44 +261,166 @@ class MyVisitor : public boost::default_dfs_visitor {
     this->g = g;
   }
 
-  void finish_vertex(Graph::vertex_descriptor v, const Graph& g) {
-    auto n = g[v];
+  void discover_vertex(Graph::vertex_descriptor v, const Graph& g) {
+    Node& n = const_cast<Node&>(g[v]);
 
-    std::cout << "finishing node: " << n << std::endl;
+    std::cout << "Pushing: " << *(&n) << std::endl;
+
+    if (n.type == NodeType::function) {
+      auto maybe_node = this->ast.find_symbol_by_value(n.value, nullptr);
+
+      if (maybe_node.has_value()) {
+        throw std::runtime_error(
+            n.location + ": Semantic error: redeclaration of function " +
+            std::get<std::string>(n.value));
+      }
+
+      this->scope = &n;
+
+      for (auto arg : n.args.value()) {
+        auto type = std::get<string>(arg.first);
+        auto name = std::get<string>(arg.second);
+
+        this->ast.add_symbol(Node{NodeType::identifier, name, std::nullopt,
+                                  std::nullopt, type, n.location, &n});
+      }
+
+      this->ast.add_symbol(n);
+    }
+
+    stack.push(&n);
   }
 
-  void discover_vertex(Graph::vertex_descriptor v, const Graph& g) {
-    auto n = g[v];
+  void finish_vertex(Graph::vertex_descriptor v, const Graph& g) {
+    if (stack.size() == 0) {
+      return;
+    }
 
-    std::cout << "Visiting node: " << n << std::endl;
+    Node* n = stack.top();
 
-    switch (n.type) {
-      case NodeType::assign: {
-        auto maybe_sym = this->ast.find_symbol_by_value(n.value);
+    if (stack.size() == 1) {
+      std::cout << "Closing: " << *n << std::endl;
+      return;
+    }
 
-        if (!maybe_sym.has_value()) {
-          ostringstream os;
-          os << n.location << ": Semantic error: variable " << n.value
-             << " not declared" << std::endl;
+    stack.pop();
 
-          throw std::runtime_error(os.str());
+    Node* last_node = stack.top();
+
+    std::cout << "Closing: " << *n << std::endl;
+
+    switch (n->type) {
+      case NodeType::routine:
+      case NodeType::definitions:
+      case NodeType::function:
+        return;
+      case NodeType::declaration:
+      case NodeType::declaration_assignment: {
+        auto maybe_node = this->ast.find_symbol_by_value(n->value, this->scope);
+
+        if (maybe_node.has_value()) {
+          throw std::runtime_error(
+              n->location + ": Semantic error: redeclaration of identifier " +
+              std::get<std::string>(n->value));
         }
 
-        Node sym = maybe_sym.value();
+        n->scope = this->scope;
 
+        this->ast.add_symbol(*n);
         break;
       }
-      case NodeType::binary_op: {
-        std::string val = std::get<std::string>(n.value);
+      default:
+        break;
+    }
 
-        if (val == "+" || val == "-" || val == "*") {
+    if (n->own_type == "unknown") {
+      if (n->type == NodeType::call) {
+        auto maybe_node = this->ast.find_symbol_by_value(n->value, nullptr);
+
+        if (maybe_node.has_value()) {
+          n->own_type = maybe_node.value().own_type;
+        } else {
+          throw std::runtime_error(
+              n->location + ": Semantic error: use of undeclared identifier " +
+              std::get<std::string>(n->value));
         }
 
-        break;
+        return;
       }
-      default: {
-        break;
+
+      auto maybe_node = this->ast.find_symbol_by_value(n->value, this->scope);
+
+      if (maybe_node.has_value()) {
+        n->own_type = maybe_node.value().own_type;
+
+        std::cout << term(Color::GREEN) << "\tComputed type: " << n->own_type
+                  << " writing to node " << *n << term(Color::RESET)
+                  << std::endl;
+
+      } else {
+        throw std::runtime_error(
+            n->location + ": Semantic error: use of undeclared identifier " +
+            std::get<std::string>(n->value));
       }
+    }
+
+    if (last_node->own_type == "unknown") {
+      if (last_node->type == NodeType::call) {
+        auto maybe_node =
+            this->ast.find_symbol_by_value(last_node->value, nullptr);
+
+        if (maybe_node.has_value()) {
+          last_node->own_type = maybe_node.value().own_type;
+        } else {
+          throw std::runtime_error(
+              last_node->location +
+              ": Semantic error: use of undeclared identifier " +
+              std::get<std::string>(last_node->value));
+        }
+
+      } else {
+        last_node->own_type = n->own_type;
+      }
+
+      std::cout << term(Color::GREEN) << "\tComputed type: " << n->own_type
+                << " writing to node " << *last_node << term(Color::RESET)
+                << std::endl;
+    } else if (n->own_type != last_node->own_type) {
+      switch (last_node->type) {
+        case NodeType::binary_op: {
+          auto op = std::get<std::string>(last_node->value);
+
+          if (op == ">" || op == "<" || op == ">=" || op == "<=" ||
+              op == "==") {
+            if (n->own_type == "int" || n->own_type == "float") {
+              // Comparing to int or float will cast operation to bool, so do
+              // nothing
+              return;
+            }
+          }
+          break;
+        }
+        case NodeType::while_:
+        case NodeType::if_: {
+          return;
+        }
+        case NodeType::function: {
+          if (n->type == NodeType::return_) {
+            if (n->own_type != last_node->own_type) {
+              break;
+            }
+          }
+          return;
+        }
+        default:
+          break;
+      }
+
+      std::cout << "last: " << *last_node << " current: " << *n << std::endl;
+
+      throw std::runtime_error(last_node->location +
+                               ": Semantic error: type mismatch " +
+                               n->own_type + " and " + last_node->own_type);
     }
   }
 };
@@ -290,6 +435,10 @@ void AST::print_tree() {
 bool AST::semantic_analysis() {
   auto vis = MyVisitor(*this, g);
   try {
+    boost::depth_first_search(g, boost::visitor(vis));
+
+    std::cout << "Assigned all types" << std::endl;
+
     // boost::depth_first_search(g, boost::visitor(vis));
     return true;
   } catch (std::runtime_error& e) {

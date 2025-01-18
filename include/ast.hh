@@ -38,13 +38,14 @@ enum class NodeType {
 
 std::string NodeTypeToString(NodeType type);
 
-typedef struct {
+typedef struct InnerNode {
   NodeType type;
   Token value;
   std::optional<Token> qualifier;
   std::optional<std::vector<std::pair<Token, Token>>> args;
   std::string own_type;
   std::string location;
+  InnerNode* scope;
 } Node;
 
 typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::bidirectionalS,
@@ -58,16 +59,7 @@ class AST {
   void add_child(Graph::vertex_descriptor v1, Graph::vertex_descriptor v2);
   void add_symbol(Node n);
   Node get_node(Graph::vertex_descriptor v) { return g[v]; }
-  std::optional<Node> find_symbol_by_value(Token v) {
-    auto it = std::find_if(symbol_table.begin(), symbol_table.end(),
-                           [&](Node s) { return s.value == v; });
-
-    if (it != symbol_table.end()) {
-      return *it;
-    }
-
-    return std::nullopt;
-  }
+  std::optional<Node> find_symbol_by_value(Token v, Node* scope);
 
   void print_tree();
   bool semantic_analysis();
@@ -91,6 +83,7 @@ std::ostream& operator<<(
     const std::optional<std::vector<std::pair<Token, Token>>>& args);
 std::ostream& operator<<(std::ostream& os, const std::optional<Token>& args);
 std::ostream& operator<<(std::ostream& os, const NodeType& nt);
+std::ostream& operator<<(std::ostream& os, const std::optional<Node>& n);
 std::ostream& operator<<(std::ostream& os, const Node& n);
 
 namespace boost {

@@ -1,0 +1,22 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Build and debug",
+      "request": "launch",
+      "type": "cppdbg",
+      "osx": {
+        "MIMode": "lldb",
+      },
+      "linux": {
+        "MIMode": "gdb",
+        "envFile": "${workspaceFolder}/${config:mesonbuild.buildFolder}/meson-vscode.env",
+      },
+      "args": ["../test/good.txt"],
+      "cwd": "${workspaceFolder}/${config:mesonbuild.buildFolder}",
+      "program": "${workspaceFolder}/${config:mesonbuild.buildFolder}/compiler",
+      "stopAtEntry": false,
+      "preLaunchTask": "Meson: Build all targets",
+    }
+  ]
+}
