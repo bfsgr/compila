@@ -39,10 +39,9 @@ bool Compiler::compile(const string &f) {
     return false;
   }
 
-  cout << term(Color::YELLOW) << "Running semantic analysis"
-       << term(Color::RESET) << endl;
+  successful = successful && this->ast.semantic_analysis();
 
-  this->ast.semantic_analysis();
+  cout << endl << endl;
 
   cout << term(Color::YELLOW) << "Abstract Syntax Tree: (Graphviz notation)"
        << term(Color::RESET) << endl;

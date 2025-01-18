@@ -6,8 +6,6 @@ std::string print_array(const std::vector<std::string>& vec) {
   std::ostringstream oss;
   oss << "[";
   for (size_t i = 0; i < vec.size(); ++i) {
-    std::cout << "Teste";
-    std::cout << vec[i];
     oss << vec[i];
     if (i != vec.size() - 1) {
       oss << ", ";
@@ -248,7 +246,7 @@ std::optional<Node> AST::find_symbol_by_value(Token v, Node* scope) {
   return std::nullopt;
 }
 
-class MyVisitor : public boost::default_dfs_visitor {
+class SemanticAnalyser : public boost::default_dfs_visitor {
  private:
   AST& ast;
   Graph g;
@@ -256,13 +254,14 @@ class MyVisitor : public boost::default_dfs_visitor {
   Node* scope;
 
  public:
-  MyVisitor(AST& ast, Graph& g) : ast(ast), g(g) {}
+  SemanticAnalyser(AST& ast, Graph& g) : ast(ast), g(g) {}
 
   void discover_vertex(Graph::vertex_descriptor v, const Graph& g) {
     Node& n = const_cast<Node&>(g[v]);
 
-    std::cout << "Pushing: " << *(&n) << std::endl;
-
+    // Declarações de funções são inseridas na tabela de símbolos
+    // já na abertura do vertice para que possam ser referenciadas
+    // como escopo
     if (n.type == NodeType::function) {
       auto maybe_node = this->ast.find_symbol_by_value(n.value, nullptr);
 
@@ -296,7 +295,6 @@ class MyVisitor : public boost::default_dfs_visitor {
     Node* n = stack.top();
 
     if (stack.size() == 1) {
-      std::cout << "Closing: " << *n << std::endl;
       return;
     }
 
@@ -304,8 +302,7 @@ class MyVisitor : public boost::default_dfs_visitor {
 
     Node* last_node = stack.top();
 
-    std::cout << "Closing: " << *n << std::endl;
-
+    // Casos onde é necessário adicionar um símbolo na tabela de símbolos
     switch (n->type) {
       case NodeType::routine:
       case NodeType::definitions:
@@ -330,6 +327,9 @@ class MyVisitor : public boost::default_dfs_visitor {
         break;
     }
 
+    // O nó sendo fechado tem tipo desconhecido, ou seja, ele só pode ser
+    // um identificador ou uma chamada de função
+    // consulta a tabela de símbolos para descobrir o tipo do nó
     if (n->own_type == "unknown") {
       if (n->type == NodeType::call) {
         auto maybe_node = this->ast.find_symbol_by_value(n->value, nullptr);
@@ -350,10 +350,6 @@ class MyVisitor : public boost::default_dfs_visitor {
       if (maybe_node.has_value()) {
         n->own_type = maybe_node.value().own_type;
 
-        std::cout << term(Color::GREEN) << "\tComputed type: " << n->own_type
-                  << " writing to node " << *n << term(Color::RESET)
-                  << std::endl;
-
       } else {
         throw std::runtime_error(
             n->location + ": Semantic error: use of undeclared identifier " +
@@ -361,6 +357,8 @@ class MyVisitor : public boost::default_dfs_visitor {
       }
     }
 
+    // O nó "pai" do nó sendo fechado tem tipo desconhecido, ou seja, devemos
+    // verificar se é possível "calcular o tipo" do nó pai com base no nó filho
     if (last_node->own_type == "unknown") {
       if (last_node->type == NodeType::call) {
         auto maybe_node =
@@ -378,20 +376,31 @@ class MyVisitor : public boost::default_dfs_visitor {
       } else {
         last_node->own_type = n->own_type;
       }
+      return;
+    }
 
-      std::cout << term(Color::GREEN) << "\tComputed type: " << n->own_type
-                << " writing to node " << *last_node << term(Color::RESET)
-                << std::endl;
-    } else if (n->own_type != last_node->own_type) {
+    // Verifica se o tipo de retorno de uma função é compatível com o tipo da
+    // função em que ela está contida
+    if (n->type == NodeType::return_) {
+      if (n->own_type != this->scope->own_type) {
+        throw std::runtime_error(last_node->location +
+                                 ": Semantic error: return type mismatch " +
+                                 n->own_type + " and " + this->scope->own_type);
+      }
+    }
+
+    // Os tipos agora já são conhecidos, então podemos compará-los
+    // para verificar se são compatíveis.
+    // Pula atribuição de tipo no if e while, permite comparadores lógicos com
+    // números e verifica se o tipo de retorno de uma função é compatível com o
+    // tipo da função
+    if (n->own_type != last_node->own_type) {
       switch (last_node->type) {
         case NodeType::binary_op: {
           auto op = std::get<std::string>(last_node->value);
-
           if (op == ">" || op == "<" || op == ">=" || op == "<=" ||
               op == "==") {
             if (n->own_type == "int" || n->own_type == "float") {
-              // Comparing to int or float will cast operation to bool, so do
-              // nothing
               return;
             }
           }
@@ -413,8 +422,6 @@ class MyVisitor : public boost::default_dfs_visitor {
           break;
       }
 
-      std::cout << "last: " << *last_node << " current: " << *n << std::endl;
-
       throw std::runtime_error(last_node->location +
                                ": Semantic error: type mismatch " +
                                n->own_type + " and " + last_node->own_type);
@@ -430,11 +437,9 @@ void AST::print_tree() {
 }
 
 bool AST::semantic_analysis() {
-  auto vis = MyVisitor(*this, g);
+  auto vis = SemanticAnalyser(*this, g);
   try {
     boost::depth_first_search(g, boost::visitor(vis));
-
-    std::cout << "Assigned all types" << std::endl;
     return true;
   } catch (std::runtime_error& e) {
     std::cerr << term(Color::RED) << e.what() << term(Color::RESET);
