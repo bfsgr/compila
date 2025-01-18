@@ -1,10 +1,27 @@
 routine teste;
 
+fn t(int a, char b) -> bool {
+  return "haha";
+}
+
+fn call() -> bool {}
+
 begin
 fn main() -> int {
-  int[3] array = [1,2,2];
+  int[2] a = [1,1];
 
-  int a = call(1+1,2,3,4);
 
-  return 1 + 1;
+  bool t1 = (23 + 1) > 1;
+
+  string s;
+
+  bool b = 2 > 1;
+
+  b = true;
+
+
+  int a = call("teste");
+  
+
+  return 1;
 }

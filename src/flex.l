@@ -50,12 +50,12 @@ routine { return parser::make_routine_tk(loc); }
 fn { return parser::make_fn_tk(loc); }
 begin { return parser::make_begin_tk(loc); }
 -> { return parser::make_arrow_tk(loc); }
-== { return parser::make_eq(loc); }
-!= { return parser::make_ne(loc); }
-\> { return parser::make_gt(loc); }
-\< { return parser::make_lt(loc); }
-\>= { return parser::make_ge(loc); }
-\<= { return parser::make_le(loc); }
+== { return parser::make_eq("==", loc); }
+!= { return parser::make_ne("!=", loc); }
+\> { return parser::make_gt(">", loc); }
+\< { return parser::make_lt("<",loc); }
+\>= { return parser::make_ge(">=",loc); }
+\<= { return parser::make_le("<=",loc); }
 = { return parser::make_assign_tk(loc); }
 - { return parser::symbol_type('-', loc); }
 \+ { return parser::symbol_type('+', loc); }

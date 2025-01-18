@@ -1,6 +1,6 @@
 #include <ast.hh>
-#include <fstream>
 #include <cstdlib>
+#include <fstream>
 
 std::string print_array(const std::vector<std::string>& vec) {
   std::ostringstream oss;
@@ -93,10 +93,45 @@ std::ostream& operator<<(std::ostream& os, const Token& var) {
   return os;
 }
 
+std::ostream& operator<<(std::ostream& os, const std::optional<Token>& args) {
+  if (args) {
+    os << args.value();
+  } else {
+    os << "<>";
+  }
+  return os;
+}
+
+std::ostream& operator<<(
+    std::ostream& os,
+    const std::optional<std::vector<std::pair<Token, Token>>>& args) {
+  if (args) {
+    os << "[";
+    for (size_t i = 0; i < args->size(); ++i) {
+      os << "(" << args->at(i).first << ", " << args->at(i).second << ")";
+      if (i != args->size() - 1) {
+        os << ", ";
+      }
+    }
+    os << "]";
+  } else {
+    os << "<>";
+  }
+  return os;
+}
+
 std::ostream& operator<<(std::ostream& os, const Node& n) {
   std::visit(
       [&n, &os](auto&& value) {
-        os << "Node(" << n.type << ", " << value << ")";
+        os << "Node(" << n.type << ", " << value;
+        if (n.qualifier.has_value()) {
+          os << ", qual=" << n.qualifier.value();
+        }
+        if (n.args.has_value()) {
+          os << ", args=" << n.args.value();
+        }
+        os << ", type=" << n.own_type;
+        os << ")";
       },
       n.value);
   return os;
@@ -112,10 +147,33 @@ std::ostream& operator<<(std::ostream& os, const NodeType& nt) {
   return os;
 }
 
-// std::ostream& boost::operator<<(std::ostream& os, const NodeType& var) {
-//   os << NodeTypeToString(var);
-//   return os;
-// }
+std::ostream& boost::operator<<(std::ostream& os,
+                                const std::optional<Token>& args) {
+  if (args) {
+    os << args.value();
+  } else {
+    os << "<>";
+  }
+  return os;
+}
+
+std::ostream& boost::operator<<(
+    std::ostream& os,
+    const std::optional<std::vector<std::pair<Token, Token>>>& args) {
+  if (args) {
+    os << "[";
+    for (size_t i = 0; i < args->size(); ++i) {
+      os << "(" << args->at(i).first << ", " << args->at(i).second << ")";
+      if (i != args->size() - 1) {
+        os << ", ";
+      }
+    }
+    os << "]";
+  } else {
+    os << "<>";
+  }
+  return os;
+}
 
 template <>
 std::string boost::lexical_cast<std::string, Token>(const Token& b) {
@@ -138,7 +196,19 @@ class NodeLabelWriter {
   template <typename Vertex>
   void operator()(std::ostream& out, const Vertex& v) const {
     const Node& node = graph[v];
-    out << "[label=\"" << node.type << ": " << node.value << "\"]";
+    out << "[label=\"" << node.type << ", " << node.value;
+
+    if (node.args.has_value()) {
+      out << ", args=" << node.args;
+    }
+
+    if (node.qualifier.has_value()) {
+      out << ", qual=" << node.qualifier;
+    }
+
+    out << ", type=" << node.own_type;
+
+    out << "\"]";
   }
 
  private:
@@ -155,22 +225,76 @@ void AST::add_child(Graph::vertex_descriptor v1, Graph::vertex_descriptor v2) {
   boost::add_edge(v1, v2, g);
 }
 
+void AST::add_symbol(Node n) { symbol_table.push_back(n); }
+
 class MyVisitor : public boost::default_dfs_visitor {
+ private:
+  AST ast;
+  Graph g;
+
  public:
-  void discover_vertex(Graph::vertex_descriptor v, const Graph& g) const {
-    std::cout << g[v] << std::endl;
+  MyVisitor(AST& ast, Graph& g) {
+    this->ast = ast;
+    this->g = g;
+  }
+
+  void finish_vertex(Graph::vertex_descriptor v, const Graph& g) {
+    auto n = g[v];
+
+    std::cout << "finishing node: " << n << std::endl;
+  }
+
+  void discover_vertex(Graph::vertex_descriptor v, const Graph& g) {
+    auto n = g[v];
+
+    std::cout << "Visiting node: " << n << std::endl;
+
+    switch (n.type) {
+      case NodeType::assign: {
+        auto maybe_sym = this->ast.find_symbol_by_value(n.value);
+
+        if (!maybe_sym.has_value()) {
+          ostringstream os;
+          os << n.location << ": Semantic error: variable " << n.value
+             << " not declared" << std::endl;
+
+          throw std::runtime_error(os.str());
+        }
+
+        Node sym = maybe_sym.value();
+
+        break;
+      }
+      case NodeType::binary_op: {
+        std::string val = std::get<std::string>(n.value);
+
+        if (val == "+" || val == "-" || val == "*") {
+        }
+
+        break;
+      }
+      default: {
+        break;
+      }
+    }
   }
 };
 
-void AST::preorder() {
-  std::ofstream dot_file("graph.dot");
-  boost::write_graphviz(dot_file, g, NodeLabelWriter(g)); // Escreve em um arquivo o grafo
-  system("dot -Tpng graph.dot -o graph.png"); // Transforma o arquivo salvo para uma imagem
-  //boost::write_graphviz(std::cout, g, NodeLabelWriter(g)); // Exibe no terminal o grafo
+void AST::print_tree() {
+  std::ofstream dot_file("../ast.dot");
+  boost::write_graphviz(dot_file, g, NodeLabelWriter(g));
 
-  std::cout << term(Color::RED) << "Preorder" << term(Color::RESET)
-            << std::endl;
-  MyVisitor vis;
+  std::cout << "AST written to ast.dot file" << std::endl;
+}
 
-  boost::depth_first_search(g, boost::visitor(vis));
+bool AST::semantic_analysis() {
+  auto vis = MyVisitor(*this, g);
+  try {
+    // boost::depth_first_search(g, boost::visitor(vis));
+    return true;
+  } catch (std::runtime_error& e) {
+    std::cerr << term(Color::RED) << e.what() << term(Color::RESET);
+
+    return false;
+  }
 }

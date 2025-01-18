@@ -21,16 +21,20 @@ class Compiler {
   void set_trace_parsing(bool b) { this->trace_parsing = b; }
   void set_trace_scanning(bool b) { this->trace_scanning = b; }
 
-  Graph::vertex_descriptor add_binary_op(Token op, Graph::vertex_descriptor a,
-                                         Graph::vertex_descriptor b);
-  Graph::vertex_descriptor add_identifier(Token id);
-  Graph::vertex_descriptor add_ret_type(Token id);
-  Graph::vertex_descriptor add_type(Token id);
-  Graph::vertex_descriptor add_type(Token id, Token qualifier);
-  Graph::vertex_descriptor add_literal(Token lit);
-  Graph::vertex_descriptor add_call(Token id, Graph::vertex_descriptor args);
   Graph::vertex_descriptor add_node(Node n);
   void add_child(Graph::vertex_descriptor v1, Graph::vertex_descriptor v2);
+  void add_symbol(Node n) { ast.add_symbol(n); }
+  std::optional<Node> find_symbol_by_value(Token v) {
+    return ast.find_symbol_by_value(v);
+  }
+
+  Node get_node(Graph::vertex_descriptor v) { return ast.get_node(v); }
+
+  std::string loc(yy::location loc) {
+    ostringstream oss;
+    oss << loc;
+    return oss.str();
+  }
 
  private:
   std::string file;

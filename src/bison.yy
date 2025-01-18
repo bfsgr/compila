@@ -37,30 +37,25 @@
 %token else_tk "else"
 %token while_tk "while"
 %token return_tk "return"
-%token gt ">"
-%token lt "<"
-%token ge ">="
-%token le "<="
-%token eq "=="
-%token ne "!="
+%token <std::string> gt ">"
+%token <std::string> lt "<"
+%token <std::string> ge ">="
+%token <std::string> le "<="
+%token <std::string> eq "=="
+%token <std::string> ne "!="
 
 %type <int> EXP
 %type <int> LITERAL
-%type <int> EXP_LIST
+%type <std::vector<int>> EXP_LIST
 %type <int> STATEMENT
 %type <int> IF
 %type <int> WHILE
-%type <int> INPUT
+%type <std::vector<int>> INPUT
 %type <int> FN
-%type <int> FN_DEF
-%type <int> ARGS
+%type <std::vector<std::pair<Token, Token>>> ARGS
 %type <int> FUNCTIONS
 %type <int> ROUTINE
 %type <int> GLOBAL_SCOPE
-%type <int> DECL_ASSIGN
-%type <int> ASSIGN
-%type <int> RET
-%type <int> FN_RET_TYPE
 
 %token <std::string> type
 %token <std::string> id
@@ -68,7 +63,6 @@
 %token <float> floating_point
 %token <std::string> string
 %token <std::string> character
-%token <std::vector<std::string>> list
 %token <bool> boolean
 
 %right assign_tk
@@ -83,36 +77,26 @@
 /* Início do programa, pode ou não tem funções globais seguindos da begin fn main() */
 ROUTINE:
   routine_tk id ';' {
-    $$ = driver.add_node(Node {NodeType::routine,std::monostate()});
-    auto idn = driver.add_identifier($2);
-    driver.add_child($$, idn);
+    $$ = driver.add_node(Node {NodeType::routine, $2, std::nullopt, std::nullopt, "void", driver.loc(@$)});
   }
 
 GLOBAL_SCOPE:
   ROUTINE begin_tk FN {
-    auto begin = driver.add_node(Node{NodeType::begin,std::monostate()});
-
     $$ = $1;
-
-    driver.add_child($$, begin);
-    driver.add_child(begin, $3);
+    driver.add_child($$, $3);
   } | 
   ROUTINE FUNCTIONS begin_tk FN  {
     $$ = $1;
-    auto begin = driver.add_node(Node{NodeType::begin,std::monostate()});
 
     driver.add_child($$, $2);
-    driver.add_child($$, begin);
-    driver.add_child(begin, $4);
+    driver.add_child($$, $4);
   }
 ; 
-
-
 
 /* Grupo de funções globais */
 FUNCTIONS:
   FN {
-    $$ = driver.add_node(Node {NodeType::definitions,std::monostate()});
+    $$ = driver.add_node(Node {NodeType::definitions,std::monostate(), std::nullopt, std::nullopt, "void", driver.loc(@$)});
     driver.add_child($$, $1);
   } |
   FUNCTIONS FN {
@@ -123,95 +107,171 @@ FUNCTIONS:
 /* Argumentos para funções, pode ser nada, um argumento ou N */
 ARGS:
   %empty {
-    $$ = driver.add_node(Node {NodeType::args,std::monostate()});
+    $$ = std::vector<std::pair<Token, Token>>();
   } |
   type id {
-    auto idn = driver.add_identifier($2);
-    auto type = driver.add_type($1);
-
-    $$ = driver.add_node(Node {NodeType::args, std::monostate()});
-    driver.add_child($$, type);
-    driver.add_child($$, idn);
+    $$ = std::vector<std::pair<Token, Token>>();
+    $$.push_back({$1, $2});
   } |
   ARGS ',' type id  {
-    auto idn = driver.add_identifier($4);
-    auto type = driver.add_type($3);
-
     $$ = $1;
-    driver.add_child($$, type);
-    driver.add_child($$, idn);
+    $$.push_back({$3, $4});
   }
 
-FN_DEF:
-  fn_tk id {
-    $$ = driver.add_node(Node {NodeType::function,std::monostate()}); 
-    auto idn = driver.add_identifier($2);
-    driver.add_child($$, idn);
-  }
 
 /* Função, pode ou não ter argumentos, tem um marcador de tipo de retorno */
 FN:
-  FN_DEF '(' ARGS ')' FN_RET_TYPE '{' INPUT '}' {
-    $$ = $1;
+  fn_tk id '(' ARGS ')' arrow_tk type  '{' INPUT '}' {
+    auto n = Node {NodeType::function, $2, std::nullopt, $4, $7, driver.loc(@$)};
 
-    driver.add_child($$, $3);
-    driver.add_child($$, $5);
-    driver.add_child($$, $7);
-  }
+    $$ = driver.add_node(n);
 
-FN_RET_TYPE:
-  arrow_tk type {
-    $$ = driver.add_ret_type($2);
+    for (auto& smt : $9) {
+      driver.add_child($$, smt);
+    }
+
+    driver.add_symbol(n);
   }
 
 /* Marca dados crus como strings, ints, vetores */
 LITERAL:
- integer { $$ = driver.add_literal($1); } |
- floating_point { $$ = driver.add_literal($1); } |
- string { $$ = driver.add_literal($1); } |
- boolean { $$ = driver.add_literal($1); } |
- character { $$ = driver.add_literal($1); } |
- list { $$ = driver.add_literal($1); } |
+ integer { $$ = driver.add_node(
+    Node {NodeType::literal, $1, std::nullopt, std::nullopt, "int", driver.loc(@$)});
+ } |
+ floating_point { 
+    $$ = driver.add_node(Node {NodeType::literal, $1, std::nullopt, std::nullopt, "float", driver.loc(@$)});
+ } |
+ string { 
+  $$ = driver.add_node(Node {NodeType::literal, $1, std::nullopt, std::nullopt, "string", driver.loc(@$)});
+  } |
+ boolean { 
+  $$ = driver.add_node(Node {NodeType::literal, $1, std::nullopt, std::nullopt, "bool", driver.loc(@$)});
+  } |
+ character { 
+  $$ = driver.add_node(Node {NodeType::literal, $1, std::nullopt, std::nullopt, "char", driver.loc(@$)}); 
+  } |
  '[' EXP_LIST ']' {
-    $$ = $2;
+    std::optional<Node> cur = std::nullopt;
+    int count = 0;
+    
+    for (auto& exp : $2) {
+      count++;
+      auto node = driver.get_node(exp);
+      if(!cur.has_value()) {
+        cur = node;
+      } else if(cur.value().own_type != node.own_type) {
+        throw yy::parser::syntax_error(driver.location, "Semantic error: type mismatch: " + cur.value().own_type + " and " + node.own_type);
+      }
+    }
+
+
+    $$ = driver.add_node(Node {NodeType::exp_list, std::monostate(), count, std::nullopt, (cur.has_value() ? cur.value().own_type : "void"), driver.loc(@$)});
+    for (auto& exp : $2) {
+      driver.add_child($$, exp);
+    }
   }
 
 /* Bloco de código, tem 0 ou N declarações  */
 INPUT:
   %empty {
-    $$ = driver.add_node(Node {NodeType::block, std::monostate()});
+    $$ = std::vector<int>();
   } |
   INPUT STATEMENT {
     $$ = $1;
-    driver.add_child($$, $2);
+    $$.push_back($2);
   }
 ;
 
 /* Declarações podem ser de tipo, de tipo e inicialização, de atribuição, if, while ou retorno  */
 STATEMENT:
   type id ';' {
-    auto idn = driver.add_identifier($2);
-    auto type = driver.add_type($1);
+    auto check = driver.find_symbol_by_value($2);
 
-    $$ = driver.add_node(Node {NodeType::declaration,std::monostate()});
-    driver.add_child($$, type);
-    driver.add_child($$, idn);
+    if (check.has_value()) {
+      throw yy::parser::syntax_error(driver.location, "Semantic error: symbol already defined: " + $2);
+    }
+
+    auto n = Node {NodeType::declaration, $2, std::nullopt, std::nullopt, $1, driver.loc(@$)};
+    $$ = driver.add_node(n);
+    driver.add_symbol(n);
   } |
   type '[' integer ']' id  ';' {
-    auto idn = driver.add_identifier($5);
-    auto type = driver.add_type($1, $3);
+    auto check = driver.find_symbol_by_value($5);
 
-    $$ = driver.add_node(Node {NodeType::declaration,std::monostate()});
-    driver.add_child($$, type);
-    driver.add_child($$, idn);
+    if (check.has_value()) {
+      throw yy::parser::syntax_error(driver.location, "Semantic error: symbol already defined: " + $5);
+    }
+
+    auto n = Node {NodeType::declaration, $5, $3, std::nullopt, $1, driver.loc(@$)};
+    $$ = driver.add_node(n);
+    driver.add_symbol(n);
   } |
-  DECL_ASSIGN EXP ';' {
-    $$ = $1;
-    driver.add_child($$, $2);
+  type id assign_tk EXP ';' {
+    auto check = driver.find_symbol_by_value($2);
+
+    if (check.has_value()) {
+      throw yy::parser::syntax_error(driver.location, "Semantic error: symbol already defined: " + $2);
+    }
+
+    auto exp = driver.get_node($4);
+
+    if($1 != exp.own_type) {
+      throw yy::parser::syntax_error(driver.location, "Semantic error: cannot assign " + exp.own_type + " to " + $1);
+    }
+
+    auto n = Node {NodeType::declaration_assignment, $2, std::nullopt, std::nullopt, $1, driver.loc(@$)};
+    $$ = driver.add_node(n);
+    driver.add_child($$, $4);
+    driver.add_symbol(n);
   } |
-  ASSIGN EXP ';' {
-    $$ = $1;
-    driver.add_child($$, $2);
+  type '[' integer ']' id assign_tk EXP ';' {
+    auto check = driver.find_symbol_by_value($5);
+
+    if (check.has_value()) {
+      throw yy::parser::syntax_error(driver.location, "Semantic error: symbol already defined: " + $5);
+    }
+
+    auto exp = driver.get_node($7);
+
+    if($1 != exp.own_type) {
+      throw yy::parser::syntax_error(driver.location, "Semantic error: cannot assign "  + exp.own_type + " to " + $1);
+    }
+
+
+    if (std::get<int>(exp.qualifier.value()) != $3) {
+      throw yy::parser::syntax_error(driver.location, "Semantic error: cannot assing array of size " + std::to_string(std::get<int>(exp.qualifier.value())) + " to size " + std::to_string($3));
+    }
+
+    auto n = Node {NodeType::declaration_assignment, $5, $3, std::nullopt, $1, driver.loc(@$)};
+    $$ = driver.add_node(n);
+    driver.add_child($$, $7);
+    driver.add_symbol(n);
+  } |
+  id assign_tk EXP ';' {
+    auto maybe_node = driver.find_symbol_by_value($1);
+
+    if(!maybe_node) {
+      throw yy::parser::syntax_error(driver.location, "Semantic error: symbol not found: " + $1);
+    }
+
+    Node n = maybe_node.value();
+
+    auto exp = driver.get_node($3);
+
+    if(n.own_type != exp.own_type) {
+      throw yy::parser::syntax_error(driver.location, "Semantic error: cannot assign " + exp.own_type + " to " + n.own_type);
+    }
+
+    if(n.qualifier.has_value() && exp.qualifier.has_value()) {
+      if(std::get<int>(n.qualifier.value()) != std::get<int>(exp.qualifier.value())) {
+        throw yy::parser::syntax_error(driver.location, "Semantic error: cannot assign array of size " + std::to_string(std::get<int>(exp.qualifier.value())) + " to size " + std::to_string(std::get<int>(n.qualifier.value())));
+      }
+    }
+
+    
+
+    $$ = driver.add_node(Node {NodeType::assign, $1, std::nullopt, std::nullopt, "void", driver.loc(@$)});
+    driver.add_child($$, $3);
   } |
   IF {
     $$ = $1;
@@ -219,76 +279,54 @@ STATEMENT:
   WHILE {
     $$ = $1;
   } |
-  RET EXP ';' { 
-    $$ = $1;
+  return_tk EXP ';' { 
+    auto n = driver.get_node($2);
+
+    $$ = driver.add_node(Node {NodeType::return_,std::monostate(), std::nullopt, std::nullopt, n.own_type, driver.loc(@$)});
     driver.add_child($$, $2);
   }
 ;
 
-RET: 
-  return_tk {
-    $$ = driver.add_node(Node {NodeType::return_,std::monostate()});
-  }
-
-ASSIGN:
-  id assign_tk {
-    auto idn = driver.add_identifier($1);
-
-    $$ = driver.add_node(Node {NodeType::assign, std::monostate()});
-    driver.add_child($$, idn);
-  }
-
-DECL_ASSIGN:
-  type id assign_tk {
-    auto idn = driver.add_identifier($2);
-    auto type = driver.add_type($1);
-
-    $$ = driver.add_node(Node {NodeType::declaration_assignment, std::monostate()});
-    driver.add_child($$, type);
-    driver.add_child($$, idn);
-  } |
-  type '[' integer ']' id assign_tk {
-    auto idn = driver.add_identifier($5);
-    auto type = driver.add_type($1, $3);
-
-    $$ = driver.add_node(Node {NodeType::declaration_assignment, std::monostate()});
-    driver.add_child($$, type);
-    driver.add_child($$, idn);
-  }
-
-
 /* If, aceita qualquer expressão como argumento, pode ou não ter o else */
 IF: 
   if_tk '(' EXP ')' '{' INPUT '}' {
-    $$ = driver.add_node(Node {NodeType::if_,std::monostate()});
+    $$ = driver.add_node(Node {NodeType::if_,std::monostate(), std::nullopt, std::nullopt, "void", driver.loc(@$)});
     driver.add_child($$, $3);
-    driver.add_child($$, $6);
+    for (auto& smt : $6) {
+      driver.add_child($$, smt);
+    }
   } |
   if_tk '(' EXP ')' '{' INPUT '}' else_tk '{' INPUT '}' {
-    $$ = driver.add_node(Node {NodeType::if_,std::monostate()});
+    $$ = driver.add_node(Node {NodeType::if_,std::monostate(), std::nullopt, std::nullopt, "void", driver.loc(@$)});
     driver.add_child($$, $3);
-    driver.add_child($$, $6);
-    driver.add_child($$, $10);
+    for (auto& smt : $6) {
+      driver.add_child($$, smt);
+    }
+    for (auto& smt : $10) {
+      driver.add_child($$, smt);
+    }
   }
 
 /* While, aceita qualquer expressão como argumento */
 WHILE:
   while_tk '(' EXP ')' '{' INPUT '}' {
-    $$ = driver.add_node(Node {NodeType::while_,std::monostate()});
+    $$ = driver.add_node(Node {NodeType::while_,std::monostate(), std::nullopt, std::nullopt, "void", driver.loc(@$)});
     driver.add_child($$, $3);
-    driver.add_child($$, $6);
+    for (auto& smt : $6) {
+      driver.add_child($$, smt);
+    }
   }
 
 /* Não terminal auxiliar para uma lista de expressões em chamadas de função */
 EXP_LIST:
-  %empty { $$ = driver.add_node(Node{NodeType::exp_list,std::monostate()}); } |
+  %empty { $$ = std::vector<int>(); } |
   EXP { 
-    $$ = driver.add_node(Node {NodeType::exp_list, std::monostate()});
-    driver.add_child($$, $1);
+    $$ = std::vector<int>();
+    $$.push_back($1);
   } |
-  EXP ',' EXP_LIST  {
-    $$ = $3;
-    driver.add_child($$, $1);
+  EXP_LIST ',' EXP   {
+    $$ = $1;
+    $$.push_back($3);
   } 
 
 /* 
@@ -296,43 +334,196 @@ EXP_LIST:
   uma operação aritimética, uma operação lógica, ou um agrupamento de expressões [evidência/precedência]
 */
 EXP:
-  id { $$ = driver.add_identifier($1); }  |
+  id { 
+    auto maybe_node = driver.find_symbol_by_value($1);
+
+    if(!maybe_node) {
+      throw yy::parser::syntax_error(driver.location, "Semantic error: symbol not found: " + $1);
+    }
+
+    Node n = maybe_node.value();
+
+    $$ = driver.add_node(Node {NodeType::identifier, $1, std::nullopt, std::nullopt, n.own_type, driver.loc(@$)});
+   }  |
   id '(' EXP_LIST ')' {
-    $$ = driver.add_call($1, $3);
+    auto maybe_node = driver.find_symbol_by_value($1);
+
+    if(!maybe_node) {
+      throw yy::parser::syntax_error(driver.location, "Semantic error: undefined function: " + $1);
+    }
+
+    Node n = maybe_node.value();
+
+    $$ = driver.add_node(Node {NodeType::call, $1, std::nullopt, std::nullopt, n.own_type, driver.loc(@$)});
+    for (auto& exp : $3) {
+      driver.add_child($$, exp);
+    }
   } |
   LITERAL |
   EXP '+' EXP {
-    $$ = driver.add_binary_op("+", $1, $3);
+    auto a = driver.get_node($1);
+    auto b = driver.get_node($3);
+
+    if(a.own_type != b.own_type) {
+      throw yy::parser::syntax_error(driver.location, "Semantic error: cannot sum: " + a.own_type + " and " + b.own_type);
+    }
+
+    if(a.own_type != "int" && a.own_type != "float") {
+      throw yy::parser::syntax_error(driver.location, "Semantic error: invalid type for addition: " + a.own_type);
+    }
+
+    $$ = driver.add_node(Node {NodeType::binary_op, "+", std::nullopt, std::nullopt, a.own_type, driver.loc(@$)});
+    driver.add_child($$, $1);
+    driver.add_child($$, $3);
   } |
   EXP '-' EXP {
-    $$ = driver.add_binary_op("-", $1, $3);
+    auto a = driver.get_node($1);
+    auto b = driver.get_node($3);
+
+    if(a.own_type != b.own_type) {
+      throw yy::parser::syntax_error(driver.location, "Semantic error: cannot subtract: " + a.own_type + " and " + b.own_type);
+    }
+
+    if(a.own_type != "int" && a.own_type != "float") {
+      throw yy::parser::syntax_error(driver.location, "Semantic error: invalid type for subtraction: " + a.own_type);
+    }
+
+    $$ = driver.add_node(Node {NodeType::binary_op, "-", std::nullopt, std::nullopt, a.own_type, driver.loc(@$)});
+    driver.add_child($$, $1);
+    driver.add_child($$, $3);
   } |
   EXP '*' EXP {
-    $$ = driver.add_binary_op("*", $1, $3);
+    auto a = driver.get_node($1);
+    auto b = driver.get_node($3);
+
+    if(a.own_type != b.own_type) {
+      throw yy::parser::syntax_error(driver.location, "Semantic error: cannot multiply: " + a.own_type + " and " + b.own_type);
+    }
+
+    if(a.own_type != "int" && a.own_type != "float") {
+      throw yy::parser::syntax_error(driver.location, "Semantic error: invalid type for multiplication: " + a.own_type);
+    }
+
+    $$ = driver.add_node(Node {NodeType::binary_op, "*", std::nullopt, std::nullopt, a.own_type, driver.loc(@$)});
+    driver.add_child($$, $1);
+    driver.add_child($$, $3);
   } |
   EXP '/' EXP {
-    $$ = driver.add_binary_op("/", $1, $3);
+    auto a = driver.get_node($1);
+    auto b = driver.get_node($3);
+
+    if(a.own_type != b.own_type) {
+      throw yy::parser::syntax_error(driver.location, "Semantic error: cannot divide: " + a.own_type + " and " + b.own_type);
+    }
+
+    if(a.own_type != "int" && a.own_type != "float") {
+      throw yy::parser::syntax_error(driver.location, "Semantic error: invalid type for division: " + a.own_type);
+    }
+
+    $$ = driver.add_node(Node {NodeType::binary_op, "/", std::nullopt, std::nullopt, "float", driver.loc(@$)});
+    driver.add_child($$, $1);
+    driver.add_child($$, $3);
   } |
   EXP gt EXP {
-    $$ = driver.add_binary_op(">", $1, $3);
+    auto a = driver.get_node($1);
+    auto b = driver.get_node($3);
+
+    if(a.own_type != b.own_type) {
+      throw yy::parser::syntax_error(driver.location, "Semantic error: cannot compare: " + a.own_type + " and " + b.own_type);
+    }
+
+    if(a.own_type != "int" && a.own_type != "float") {
+      throw yy::parser::syntax_error(driver.location, "Semantic error: invalid type for comparison: " + a.own_type);
+    }
+
+    $$ = driver.add_node(Node {NodeType::binary_op, $2, std::nullopt, std::nullopt, "bool", driver.loc(@$)});
+    driver.add_child($$, $1);
+    driver.add_child($$, $3);
   } |
   EXP lt EXP {
-    $$ = driver.add_binary_op("<", $1, $3);
+    auto a = driver.get_node($1);
+    auto b = driver.get_node($3);
+
+    if(a.own_type != b.own_type) {
+      throw yy::parser::syntax_error(driver.location, "Semantic error: cannot compare: " + a.own_type + " and " + b.own_type);
+    }
+
+    if(a.own_type != "int" && a.own_type != "float") {
+      throw yy::parser::syntax_error(driver.location, "Semantic error: invalid type for comparison: " + a.own_type);
+    }
+
+    $$ = driver.add_node(Node {NodeType::binary_op, $2, std::nullopt, std::nullopt, "bool", driver.loc(@$)});
+    driver.add_child($$, $1);
+    driver.add_child($$, $3);
   } |
   EXP ge EXP {
-    $$ = driver.add_binary_op(">=", $1, $3);
+    auto a = driver.get_node($1);
+    auto b = driver.get_node($3);
+
+    if(a.own_type != b.own_type) {
+      throw yy::parser::syntax_error(driver.location, "Semantic error: cannot compare: " + a.own_type + " and " + b.own_type);
+    }
+
+    if(a.own_type != "int" && a.own_type != "float") {
+      throw yy::parser::syntax_error(driver.location, "Semantic error: invalid type for comparison: " + a.own_type);
+    }
+
+    $$ = driver.add_node(Node {NodeType::binary_op, $2, std::nullopt, std::nullopt, "bool", driver.loc(@$)});
+    driver.add_child($$, $1);
+    driver.add_child($$, $3);
   } |
   EXP le EXP {
-    $$ = driver.add_binary_op("<=", $1, $3);
+    auto a = driver.get_node($1);
+    auto b = driver.get_node($3);
+
+    if(a.own_type != b.own_type) {
+      throw yy::parser::syntax_error(driver.location, "Semantic error: cannot compare: " + a.own_type + " and " + b.own_type);
+    }
+
+    if(a.own_type != "int" && a.own_type != "float") {
+      throw yy::parser::syntax_error(driver.location, "Semantic error: invalid type for comparison: " + a.own_type);
+    }
+
+    $$ = driver.add_node(Node {NodeType::binary_op, $2, std::nullopt, std::nullopt, "bool", driver.loc(@$)});
+    driver.add_child($$, $1);
+    driver.add_child($$, $3);
   } |
   EXP eq EXP {
-    $$ = driver.add_binary_op("==", $1, $3);
+    auto a = driver.get_node($1);
+    auto b = driver.get_node($3);
+
+    if(a.own_type != b.own_type) {
+      throw yy::parser::syntax_error(driver.location, "Semantic error: cannot compare: " + a.own_type + " and " + b.own_type);
+    }
+
+    if(a.own_type != "int" && a.own_type != "float" && a.own_type != "bool") {
+      throw yy::parser::syntax_error(driver.location, "Semantic error: invalid type for comparison: " + a.own_type);
+    }
+
+    $$ = driver.add_node(Node {NodeType::binary_op, $2, std::nullopt, std::nullopt, "bool", driver.loc(@$)});
+    driver.add_child($$, $1);
+    driver.add_child($$, $3);
   } |
   EXP ne EXP  {
-    $$ = driver.add_binary_op("!=", $1, $3);
+    auto a = driver.get_node($1);
+    auto b = driver.get_node($3);
+
+    if(a.own_type != b.own_type) {
+      throw yy::parser::syntax_error(driver.location, "Semantic error: cannot compare: " + a.own_type + " and " + b.own_type);
+    }
+
+    if(a.own_type != "int" && a.own_type != "float" && a.own_type != "bool") {
+      throw yy::parser::syntax_error(driver.location, "Semantic error: invalid type for comparison: " + a.own_type);
+    }
+
+    $$ = driver.add_node(Node {NodeType::binary_op, $2, std::nullopt, std::nullopt, "bool", driver.loc(@$)});
+    driver.add_child($$, $1);
+    driver.add_child($$, $3);
   } |
   '(' EXP ')' {
-    $$ = driver.add_node(Node {NodeType::precedence, std::monostate()});
+    Node exp = driver.get_node($2);
+
+    $$ = driver.add_node(Node {NodeType::precedence, std::monostate(), std::nullopt, std::nullopt, exp.own_type, driver.loc(@$)});
     driver.add_child($$, $2);
   }
 ; 
