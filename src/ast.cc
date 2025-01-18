@@ -250,16 +250,13 @@ std::optional<Node> AST::find_symbol_by_value(Token v, Node* scope) {
 
 class MyVisitor : public boost::default_dfs_visitor {
  private:
-  AST ast;
+  AST& ast;
   Graph g;
   std::stack<Node*> stack;
   Node* scope;
 
  public:
-  MyVisitor(AST& ast, Graph& g) {
-    this->ast = ast;
-    this->g = g;
-  }
+  MyVisitor(AST& ast, Graph& g) : ast(ast), g(g) {}
 
   void discover_vertex(Graph::vertex_descriptor v, const Graph& g) {
     Node& n = const_cast<Node&>(g[v]);
@@ -438,8 +435,6 @@ bool AST::semantic_analysis() {
     boost::depth_first_search(g, boost::visitor(vis));
 
     std::cout << "Assigned all types" << std::endl;
-
-    // boost::depth_first_search(g, boost::visitor(vis));
     return true;
   } catch (std::runtime_error& e) {
     std::cerr << term(Color::RED) << e.what() << term(Color::RESET);

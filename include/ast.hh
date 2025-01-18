@@ -64,14 +64,15 @@ class AST {
   void print_tree();
   bool semantic_analysis();
 
- private:
-  Graph g;
   std::vector<Node> symbol_table = {
       Node{NodeType::function, "printf", std::nullopt,
            std::vector<std::pair<Token, Token>>(), "void", "<stdio>"},
       Node{NodeType::function, "scanf", std::nullopt,
            std::vector<std::pair<Token, Token>>(), "void", "<stdio>"},
   };
+
+ private:
+  Graph g;
 };
 
 // ostream overloads

@@ -39,15 +39,10 @@ bool Compiler::compile(const string &f) {
     return false;
   }
 
-  // cout << term(Color::YELLOW) << "Symbol table (n=" <<
-  // ast.symbol_table.size()
-  //      << ")" << term(Color::RESET) << endl;
+  cout << term(Color::YELLOW) << "Running semantic analysis"
+       << term(Color::RESET) << endl;
 
-  // cout << "[" << endl;
-  // for (auto &s : symbol_table) {
-  //   cout << "  " << s << endl;
-  // }
-  // cout << "]" << endl << endl;
+  this->ast.semantic_analysis();
 
   cout << term(Color::YELLOW) << "Abstract Syntax Tree: (Graphviz notation)"
        << term(Color::RESET) << endl;
@@ -56,12 +51,14 @@ bool Compiler::compile(const string &f) {
 
   cout << endl;
 
-  cout << term(Color::YELLOW) << "Running semantic analysis"
-       << term(Color::RESET) << endl;
+  cout << term(Color::YELLOW) << "Symbol table (n=" << ast.symbol_table.size()
+       << ")" << term(Color::RESET) << endl;
 
-  this->ast.semantic_analysis();
-
-  cout << endl;
+  cout << "[" << endl;
+  for (auto &s : ast.symbol_table) {
+    cout << "  " << s << endl;
+  }
+  cout << "]" << endl << endl;
 
   fclose(fp);
 
