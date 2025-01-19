@@ -1,9 +1,7 @@
 # Trabalho de compiladores 9797-01
 
-Alunos:
-
-Bruno Fusieger RA: 112646
-
+Alunos: <br>
+Bruno Fusieger RA: 112646<br>
 Samuel Bispo RA: 103643
 
 ## Como executar:
