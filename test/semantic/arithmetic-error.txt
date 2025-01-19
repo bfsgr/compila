@@ -1,0 +1,10 @@
+// Não é possível comparar uma string com números com qualquer operador lógico ou aritimético
+
+routine teste;
+
+begin
+fn main() -> int {
+  int b = 1 + "teste";
+
+  return 1;
+}

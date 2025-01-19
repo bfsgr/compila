@@ -20,7 +20,7 @@ fn main() -> int {
   b = true;
 
 
-  bool l = call("teste");
+  bool l = call(true, 'c');
   
 
   return 1;

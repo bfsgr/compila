@@ -1,0 +1,10 @@
+// A função print não pode ser atribuída a uma variável, ela é a única função com esse comportamento
+
+routine teste;
+
+begin
+fn main() -> int {
+  string a = print("teste");
+
+  return 1;
+}

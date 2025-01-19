@@ -1,0 +1,10 @@
+// Um array precisa de um tamanho em int para ser definido
+
+routine teste;
+
+begin
+fn main() -> int {
+  int["teste"] a = [2];
+
+  return 1;
+}

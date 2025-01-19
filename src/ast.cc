@@ -256,7 +256,7 @@ class SemanticAnalyser : public boost::default_dfs_visitor {
   Node* last_closed = nullptr;
 
   Node* caller = nullptr;
-  size_t arg_index = 0;
+  size_t arg_count = 0;
 
  public:
   SemanticAnalyser(AST& ast, Graph& g) : ast(ast), g(g) {}
@@ -299,7 +299,7 @@ class SemanticAnalyser : public boost::default_dfs_visitor {
         n.args = maybe_node.value().args;
 
         this->caller = &n;
-        this->arg_index = 0;
+        this->arg_count = 0;
       } else {
         throw std::runtime_error(
             n.location + ": Semantic error: use of undeclared identifier " +
@@ -378,8 +378,39 @@ class SemanticAnalyser : public boost::default_dfs_visitor {
     // O nó "pai" do nó sendo fechado tem tipo desconhecido, ou seja, devemos
     // verificar se é possível "calcular o tipo" do nó pai com base no nó filho
     if (last_node->own_type == "unknown") {
-      last_node->own_type = n->own_type;
-      return;
+      if (last_node->type == NodeType::assign) {
+        auto maybe_node =
+            this->ast.find_symbol_by_value(last_node->value, this->scope);
+
+        if (maybe_node.has_value()) {
+          last_node->own_type = maybe_node->own_type;
+          last_node->qualifier = maybe_node->qualifier;
+
+        } else {
+          throw std::runtime_error(
+              last_node->location +
+              ": Semantic error: use of undeclared identifier " +
+              std::get<std::string>(last_node->value));
+        }
+      } else {
+        last_node->own_type = n->own_type;
+      }
+    }
+
+    // fechando a chamada de função, verificar se o número de argumentos está
+    // correto
+    if (n->type == NodeType::call) {
+      auto args = this->caller->args;
+
+      if (!args.has_value()) {
+        return;
+      }
+
+      if (this->arg_count != args.value().size()) {
+        throw std::runtime_error(
+            last_node->location +
+            ": Semantic error: too few arguments in function call");
+      }
     }
 
     // O nó "pai" do nó sendo fechado é uma chamada de função
@@ -395,14 +426,15 @@ class SemanticAnalyser : public boost::default_dfs_visitor {
       }
 
       auto args = this->caller->args.value();
+      this->arg_count++;
 
-      if (this->arg_index > args.size() - 1) {
+      if (this->arg_count > args.size()) {
         throw std::runtime_error(
             last_node->location +
             ": Semantic error: too many arguments in function call");
       }
 
-      auto arg = args[this->arg_index];
+      auto arg = args[this->arg_count - 1];
 
       if (n->own_type != std::get<std::string>(arg.first)) {
         throw std::runtime_error(
@@ -410,7 +442,6 @@ class SemanticAnalyser : public boost::default_dfs_visitor {
             n->own_type + " and " + std::get<std::string>(arg.first));
       }
 
-      this->arg_index++;
       return;
     }
 

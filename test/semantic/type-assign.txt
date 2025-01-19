@@ -1,0 +1,12 @@
+// Esse exemplo demonstra o erro de tentar atribuir tipos diferentes para uma variável.
+
+routine teste;
+
+begin
+fn main() -> int {
+  int a;
+
+  a = true;
+
+  return 1;
+}

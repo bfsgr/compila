@@ -1,0 +1,11 @@
+// Esse exemplo demonstra o erro de tentar declarar uma nova variável com o nome de uma já existente
+
+routine teste;
+
+begin
+fn main() -> int {
+  int a = 1;
+  char a = 'c';
+
+  return 1;
+}

@@ -1,0 +1,10 @@
+// Não existe cast de tipos, portanto, não é possível somar uma int e um float por exemplo.
+
+routine teste;
+
+begin
+fn main() -> int {
+  float b = 1 + 1.2;
+
+  return 1;
+}

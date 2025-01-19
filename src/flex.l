@@ -16,8 +16,8 @@ using namespace yy;
 %}
 
 /* --- Definitions --- */
-INTEGER [0-9]+
-FLOAT {INTEGER}+\.{INTEGER}+
+INTEGER [0-9]+|-[0-9]+
+FLOAT {INTEGER}+\.[0-9]+
 BOOL true|false
 STRING \"[^\"]*\" 
 CHAR \'[^\']\'
@@ -72,6 +72,7 @@ else { return parser::make_else_tk(loc); }
 while { return parser::make_while_tk(loc); }
 return { return parser::make_return_tk(loc); }
 print { return parser::make_print_tk(loc); }
+\/\/.* { loc.step(); }
 
 
 {TYPE} { return parser::make_type(yytext, loc); }

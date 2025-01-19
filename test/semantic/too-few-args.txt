@@ -1,0 +1,14 @@
+// Esse exemplo demonstra o erro tentar chamar uma função com menos argumentos do que o definido
+
+routine teste;
+
+fn foo(int a) -> int {
+  return a;
+}
+
+begin
+fn main() -> int {
+  int a = foo();
+
+  return 1;
+}

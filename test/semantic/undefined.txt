@@ -1,0 +1,10 @@
+// Esse exemplo demonstra o erro tentar chamar uma função não definida.
+
+routine teste;
+
+begin
+fn main() -> int {
+  int a = foo();
+
+  return 1;
+}

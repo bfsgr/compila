@@ -21,7 +21,7 @@ fn main() -> int {
   int[3] array2 = [1,2,2];
 
   string fn_call = hello();
-  bool fn_call_with_args = test(b);
+  bool fn_call_with_args = test(true);
 
   if(sum > 1) {
     sum = sum - 1;

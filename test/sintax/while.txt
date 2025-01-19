@@ -1,0 +1,12 @@
+// Um while precisa de uma expressão para existir
+
+routine teste;
+
+begin
+fn main() -> int {
+  while() {
+    print("Hello");
+  }
+
+  return 1;
+}

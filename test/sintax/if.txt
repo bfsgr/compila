@@ -1,0 +1,12 @@
+// Um if precisa de uma expressão para existir
+
+routine teste;
+
+begin
+fn main() -> int {
+  if() {
+    print("Hello");
+  }
+
+  return 1;
+}

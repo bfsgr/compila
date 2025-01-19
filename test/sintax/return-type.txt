@@ -1,0 +1,8 @@
+// Toda função deve ter um "-> <tipo>" para demarcar seu tipo de retorno
+
+routine teste;
+
+begin
+fn main() {
+  return 1;
+}

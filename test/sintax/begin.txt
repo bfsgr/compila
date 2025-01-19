@@ -1,0 +1,7 @@
+// o marcador begin não pode estar ausente
+
+routine teste;
+
+fn main() -> int {
+  return 1;
+}

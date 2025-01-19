@@ -1,0 +1,12 @@
+// Esse exemplo demonstra o erro tentar atribuir um array com mais elementos que o definido
+
+routine teste;
+
+begin
+fn main() -> int {
+  float[2] a = [1.3,2.1];
+
+  a = [1.3,2.1,2.0];
+
+  return 1;
+}

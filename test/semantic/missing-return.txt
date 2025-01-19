@@ -1,0 +1,16 @@
+// Esse exemplo demonstra o erro de não ter um 'return' como última instrução de uma função;
+// Obs: não foi verificado se o código é inatingível, portanto, é necessário um 'return' mesmo 
+// que a execução sempre termine antes em um 'if' por exemplo
+
+routine teste;
+
+begin
+fn main() -> int {
+  int a = 1;
+
+  if(a > 0) {
+    return 1;
+  } else {
+    return 0;
+  }
+}

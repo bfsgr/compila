@@ -1,0 +1,8 @@
+// Esse exemplo demonstra o erro de retornar um valor de tipo diferente do definido pela função
+
+routine teste;
+
+begin
+fn main() -> int {
+  return "hello world";
+}

@@ -1,0 +1,11 @@
+// A função básica input captura entrada do usuário e retorna sempre uma string
+// é um erro semantico tentar atribuir essa chamada a um tipo que não seja string
+
+routine teste;
+
+begin
+fn main() -> int {
+  int a = input();
+
+  return 1;
+}

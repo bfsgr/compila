@@ -1,0 +1,16 @@
+// Esse exemplo demonstra o erro tentar definir duas funções com o mesmo nome
+
+routine teste;
+
+fn foo(int a) -> int {
+  return a;
+}
+
+fn foo(bool a) -> bool {
+  return a;
+}
+
+begin
+fn main() -> int {
+  return 1;
+}

@@ -1,0 +1,14 @@
+// Esse exemplo demonstra o erro tentar chamar uma função argumentos de tipos diferentes do definido
+
+routine teste;
+
+fn foo(int a) -> int {
+  return a;
+}
+
+begin
+fn main() -> int {
+  int a = foo("hello world");
+
+  return 1;
+}

@@ -1,0 +1,10 @@
+// Esse exemplo demonstra o erro tentar usar uma variável não definida.
+
+routine teste;
+
+begin
+fn main() -> int {
+  int a = b;
+
+  return 1;
+}

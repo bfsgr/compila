@@ -1,0 +1,11 @@
+// Esse é um exemplo de erro léxico, o símbolo @ não faz parte do alfabeto da linguagem
+
+routine teste;
+
+begin
+fn main() -> int {
+
+  int @a = 1;
+
+  return 1;
+}
