@@ -6,7 +6,7 @@ Samuel Bispo RA: 103643
 
 ## Como executar:
 
-O trabalho foi desenvolvido em C++ usando o [Meson build system](https://mesonbuild.com/), para executar é necessário instala-lo.
+O trabalho foi desenvolvido em C++ usando o [Meson build system](https://mesonbuild.com/), para executar é necessário instalá-lo.
 
 São dependências do projeto:
 - [flex](https://github.com/westes/flex), versão mínima testada: 2.6.4
