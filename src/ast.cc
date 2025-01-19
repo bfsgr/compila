@@ -426,6 +426,18 @@ class SemanticAnalyser : public boost::default_dfs_visitor {
                                ": Semantic error: type mismatch " +
                                n->own_type + " and " + last_node->own_type);
     }
+
+    // Verifica se o tamanho do array é compatível
+    // no caso de declaração de array
+    if (n->qualifier.has_value() && last_node->qualifier.has_value()) {
+      if (n->qualifier.value() != last_node->qualifier.value()) {
+        throw std::runtime_error(
+            last_node->location + ": Semantic error: expected array size of " +
+            std::to_string(std::get<int>(last_node->qualifier.value())) +
+            " found size " +
+            std::to_string(std::get<int>(n->qualifier.value())));
+      }
+    }
   }
 };
 
