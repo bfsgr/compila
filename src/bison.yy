@@ -37,6 +37,7 @@
 %token else_tk "else"
 %token while_tk "while"
 %token return_tk "return"
+%token print_tk "print"
 %token <std::string> gt ">"
 %token <std::string> lt "<"
 %token <std::string> ge ">="
@@ -195,6 +196,12 @@ STATEMENT:
   id assign_tk EXP ';' {    
     $$ = driver.add_node(Node {NodeType::assign, $1, std::nullopt, std::nullopt, "unknown", driver.loc(@$)});
     driver.add_child($$, $3);
+  } |
+  print_tk '(' EXP_LIST ')' ';' {
+    $$ = driver.add_node(Node {NodeType::call, "print", std::nullopt, std::nullopt, "unknown", driver.loc(@$)});
+    for (auto& exp : $3) {
+      driver.add_child($$, exp);
+    }
   } |
   IF {
     $$ = $1;

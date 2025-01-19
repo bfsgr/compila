@@ -71,6 +71,7 @@ if { return parser::make_if_tk(loc); }
 else { return parser::make_else_tk(loc); }
 while { return parser::make_while_tk(loc); }
 return { return parser::make_return_tk(loc); }
+print { return parser::make_print_tk(loc); }
 
 
 {TYPE} { return parser::make_type(yytext, loc); }

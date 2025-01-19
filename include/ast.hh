@@ -65,10 +65,10 @@ class AST {
   bool semantic_analysis();
 
   std::vector<Node> symbol_table = {
-      Node{NodeType::function, "printf", std::nullopt,
-           std::vector<std::pair<Token, Token>>(), "void", "<stdio>"},
-      Node{NodeType::function, "scanf", std::nullopt,
-           std::vector<std::pair<Token, Token>>(), "void", "<stdio>"},
+      Node{NodeType::function, "print", std::nullopt, std::nullopt, "void",
+           "<stdio>"},
+      Node{NodeType::function, "input", std::nullopt,
+           std::vector<std::pair<Token, Token>>(), "string", "<stdio>"},
   };
 
  private:

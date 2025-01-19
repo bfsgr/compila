@@ -253,6 +253,11 @@ class SemanticAnalyser : public boost::default_dfs_visitor {
   std::stack<Node*> stack;
   Node* scope;
 
+  Node* last_closed = nullptr;
+
+  Node* caller = nullptr;
+  size_t arg_index = 0;
+
  public:
   SemanticAnalyser(AST& ast, Graph& g) : ast(ast), g(g) {}
 
@@ -284,6 +289,24 @@ class SemanticAnalyser : public boost::default_dfs_visitor {
       this->ast.add_symbol(n);
     }
 
+    // Chamadas de função devem ser consideradas antes para verificação dos
+    // argumentos
+    if (n.type == NodeType::call) {
+      auto maybe_node = this->ast.find_symbol_by_value(n.value, nullptr);
+
+      if (maybe_node.has_value()) {
+        n.own_type = maybe_node.value().own_type;
+        n.args = maybe_node.value().args;
+
+        this->caller = &n;
+        this->arg_index = 0;
+      } else {
+        throw std::runtime_error(
+            n.location + ": Semantic error: use of undeclared identifier " +
+            std::get<std::string>(n.value));
+      }
+    }
+
     stack.push(&n);
   }
 
@@ -306,8 +329,17 @@ class SemanticAnalyser : public boost::default_dfs_visitor {
     switch (n->type) {
       case NodeType::routine:
       case NodeType::definitions:
-      case NodeType::function:
         return;
+      case NodeType::function: {
+        if (this->last_closed != nullptr &&
+            this->last_closed->type == NodeType::return_) {
+          return;
+        } else {
+          throw std::runtime_error(n->location + ": Semantic error: function " +
+                                   std::get<std::string>(n->value) +
+                                   " must end with a return statement");
+        }
+      }
       case NodeType::declaration:
       case NodeType::declaration_assignment: {
         auto maybe_node = this->ast.find_symbol_by_value(n->value, this->scope);
@@ -331,20 +363,6 @@ class SemanticAnalyser : public boost::default_dfs_visitor {
     // um identificador ou uma chamada de função
     // consulta a tabela de símbolos para descobrir o tipo do nó
     if (n->own_type == "unknown") {
-      if (n->type == NodeType::call) {
-        auto maybe_node = this->ast.find_symbol_by_value(n->value, nullptr);
-
-        if (maybe_node.has_value()) {
-          n->own_type = maybe_node.value().own_type;
-        } else {
-          throw std::runtime_error(
-              n->location + ": Semantic error: use of undeclared identifier " +
-              std::get<std::string>(n->value));
-        }
-
-        return;
-      }
-
       auto maybe_node = this->ast.find_symbol_by_value(n->value, this->scope);
 
       if (maybe_node.has_value()) {
@@ -360,22 +378,39 @@ class SemanticAnalyser : public boost::default_dfs_visitor {
     // O nó "pai" do nó sendo fechado tem tipo desconhecido, ou seja, devemos
     // verificar se é possível "calcular o tipo" do nó pai com base no nó filho
     if (last_node->own_type == "unknown") {
-      if (last_node->type == NodeType::call) {
-        auto maybe_node =
-            this->ast.find_symbol_by_value(last_node->value, nullptr);
+      last_node->own_type = n->own_type;
+      return;
+    }
 
-        if (maybe_node.has_value()) {
-          last_node->own_type = maybe_node.value().own_type;
-        } else {
-          throw std::runtime_error(
-              last_node->location +
-              ": Semantic error: use of undeclared identifier " +
-              std::get<std::string>(last_node->value));
-        }
-
-      } else {
-        last_node->own_type = n->own_type;
+    // O nó "pai" do nó sendo fechado é uma chamada de função
+    if (last_node->type == NodeType::call) {
+      if (last_node != this->caller) {
+        throw std::runtime_error(last_node->location +
+                                 ": Semantic error: undefined function call ");
       }
+
+      // Aceita qualquer número de argumentos
+      if (!this->caller->args.has_value()) {
+        return;
+      }
+
+      auto args = this->caller->args.value();
+
+      if (this->arg_index > args.size() - 1) {
+        throw std::runtime_error(
+            last_node->location +
+            ": Semantic error: too many arguments in function call");
+      }
+
+      auto arg = args[this->arg_index];
+
+      if (n->own_type != std::get<std::string>(arg.first)) {
+        throw std::runtime_error(
+            last_node->location + ": Semantic error: argument type mismatch " +
+            n->own_type + " and " + std::get<std::string>(arg.first));
+      }
+
+      this->arg_index++;
       return;
     }
 
@@ -392,8 +427,8 @@ class SemanticAnalyser : public boost::default_dfs_visitor {
     // Os tipos agora já são conhecidos, então podemos compará-los
     // para verificar se são compatíveis.
     // Pula atribuição de tipo no if e while, permite comparadores lógicos com
-    // números e verifica se o tipo de retorno de uma função é compatível com o
-    // tipo da função
+    // números e verifica se o tipo de retorno de uma função é compatível com
+    // o tipo da função
     if (n->own_type != last_node->own_type) {
       switch (last_node->type) {
         case NodeType::binary_op: {
@@ -438,6 +473,8 @@ class SemanticAnalyser : public boost::default_dfs_visitor {
             std::to_string(std::get<int>(n->qualifier.value())));
       }
     }
+
+    this->last_closed = n;
   }
 };
 
